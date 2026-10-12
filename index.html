@@ -1,387 +1,123 @@
-<!DOCTYPE html>
-<html lang="es" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hebreos TV</title>
-    <!-- Tailwind CSS with custom theme colors -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        amber: {
-                            50: '#fffbeb',
-                            100: '#fef3c7',
-                            200: '#fde68a',
-                            300: '#fcd34d',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            700: '#b45309',
-                            800: '#92400e',
-                            900: '#78350f',
-                            950: '#451a03',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Outfit', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.02);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(245, 158, 11, 0.4);
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+<!-- Cargar Firebase SDKs desde CDN -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <!-- Header Navigation -->
-    <header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-amber-500/20 shadow-sm transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <!-- Brand Logo & Title -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-300 flex items-center justify-center shadow-lg shadow-amber-500/30 text-slate-950 font-extrabold text-lg">
-                    <i class="fa-solid fa-tv"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-extrabold tracking-wider bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 bg-clip-text text-transparent uppercase flex items-center gap-2">
-                        Hebreos TV
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
-                            <span class="w-1.5 h-1.5 mr-1.5 bg-red-500 rounded-full animate-pulse"></span> EN VIVO
-                        </span>
-                    </h1>
-                </div>
-            </div>
+    // Tu configuración de Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyB55d1iEAZGcGjlpnWMGIU3JAu1CRknkSw",
+        authDomain: "hebreostv.firebaseapp.com",
+        projectId: "hebreostv",
+        storageBucket: "hebreostv.firebasestorage.app",
+        messagingSenderId: "150421055844",
+        appId: "1:150421055844:web:0fb2884e25bf0b4b80f271",
+        measurementId: "G-9L2JEJ1SZ1"
+    };
 
-            <!-- Header Action Controls -->
-            <div class="flex items-center space-x-3">
-                <!-- Theme Switch Button -->
-                <button id="theme-toggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400 hover:scale-105 transition-all border border-slate-200 dark:border-slate-700 shadow-xs" title="Cambiar Tema">
-                    <i id="theme-icon-sun" class="fa-solid fa-sun text-base hidden dark:inline"></i>
-                    <i id="theme-icon-moon" class="fa-solid fa-moon text-base inline dark:hidden"></i>
-                </button>
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
-                <!-- Firebase Auth status -->
-                <div id="auth-container">
-                    <button id="login-btn" class="hidden items-center space-x-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/20 transition-all text-sm">
-                        <i class="fa-brands fa-google"></i>
-                        <span>Iniciar Sesión</span>
-                    </button>
-                    <div id="user-info" class="hidden items-center space-x-2.5">
-                        <img id="user-avatar" src="" alt="Avatar" class="w-9 h-9 rounded-xl border-2 border-amber-500 object-cover shadow-sm">
-                        <div class="hidden sm:block text-left">
-                            <div id="user-name" class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[120px]"></div>
-                            <span class="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Conectado</span>
-                        </div>
-                        <button id="logout-btn" title="Cerrar sesión" class="p-2 rounded-xl bg-slate-100 hover:bg-red-500/10 hover:text-red-600 text-slate-500 dark:bg-slate-800 dark:hover:bg-red-500/20 dark:hover:text-red-400 dark:text-slate-400 transition-colors border border-slate-200 dark:border-slate-700 text-xs">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
+    // Elementos del DOM
+    const loginBtn = document.getElementById('loginBtn');
+    const userProfile = document.getElementById('userProfile');
+    const userAvatar = document.getElementById('userAvatar');
+    const userName = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const authPrompt = document.getElementById('authPrompt');
 
-    <!-- Main App Content -->
-    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Video Stream Column -->
-        <div class="lg:col-span-2 flex flex-col space-y-5">
-            <!-- VDO.Ninja Frame Box -->
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors duration-300">
-                <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
-                    <iframe id="stream-iframe" src="https://vdo.ninja/?view=HebreosTV" class="w-full h-full border-0" allowfullscreen allow="autoplay; microphone; camera"></iframe>
-                </div>
-                <!-- Status footer -->
-                <div class="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
-                    <div class="flex items-center space-x-3">
-                        <span class="relative flex h-3 w-3">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                        </span>
-                        <span class="text-sm font-bold tracking-wide text-slate-700 dark:text-slate-200">Señal Oficial de Hebreos TV</span>
-                    </div>
-                    <div class="flex items-center space-x-2 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <span>Transmisión en Vivo</span>
-                    </div>
-                </div>
-            </div>
+    let currentUser = null;
 
-            <!-- Channel Welcome Banner -->
-            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm transition-colors duration-300">
-                <h2 class="text-lg font-bold text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-2">
-                    <i class="fa-solid fa-book-open"></i> Bienvenidos a nuestra transmisión
-                </h2>
-                <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                    Disfruta de nuestra programación edificante y comparte tus peticiones de oración, saludos o testimonios en nuestro muro interactivo en tiempo real.
-                </p>
-            </div>
-        </div>
-
-        <!-- Live Interactive Chat Wall -->
-        <div class="flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-colors duration-300 h-[600px] lg:h-auto">
-            <!-- Chat Title Bar -->
-            <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold">
-                        <i class="fa-solid fa-comments"></i>
-                    </div>
-                    <h3 class="font-bold text-slate-900 dark:text-slate-100">Muro Interactivo</h3>
-                </div>
-                <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20">
-                    Comunidad
-                </span>
-            </div>
-
-            <!-- Realtime Message List -->
-            <div id="messages-container" class="flex-grow p-4 overflow-y-auto custom-scrollbar space-y-3 bg-slate-50/30 dark:bg-slate-950/20">
-                <div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm">
-                    <i class="fa-solid fa-spinner fa-spin text-amber-500 text-xl mb-2"></i>
-                    <p>Cargando mensajes del muro...</p>
-                </div>
-            </div>
-
-            <!-- Message Input / Google Login Prompt -->
-            <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <div id="login-prompt" class="hidden text-center py-3 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-3">
-                    <p class="text-xs text-slate-600 dark:text-slate-400 mb-2">Inicia sesión con Google para publicar un mensaje</p>
-                    <button onclick="document.getElementById('login-btn').click()" class="text-xs px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow-sm transition-all">
-                        <i class="fa-brands fa-google mr-1.5"></i> Iniciar Sesión con Google
-                    </button>
-                </div>
-                <form id="chat-form" class="flex flex-col space-y-2">
-                    <textarea id="chat-input" rows="2" placeholder="Escribe tu mensaje o petición de oración..." class="w-full p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:outline-none focus:border-amber-500 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 resize-none transition-colors" required disabled></textarea>
-                    <div class="flex justify-between items-center">
-                        <span class="text-[11px] text-slate-500 dark:text-slate-400">Mensajes visibles para todos.</span>
-                        <button type="submit" id="send-btn" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-xl text-sm shadow-md shadow-amber-500/20 transition-all flex items-center space-x-1.5" disabled>
-                            <span>Enviar</span>
-                            <i class="fa-solid fa-paper-plane text-xs"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800/80 py-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-950 transition-colors duration-300">
-        <p>&copy; 2026 Hebreos TV. Todos los derechos reservados.</p>
-    </footer>
-
-    <!-- Firebase Script and Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global state and configuration
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hebreos-tv-app';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
-        let app, auth, db;
-        let currentUser = null;
-
-        // Theme Toggle Functionality
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        
-        // Initialize Theme from localStorage or system preference
-        if (localStorage.getItem('theme') === 'light') {
-            document.documentElement.classList.remove('dark');
-        } else {
-            document.documentElement.classList.add('dark');
-        }
-
-        themeToggleBtn.addEventListener('click', () => {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
-            }
-        });
-
-        // Initialize Firebase safely
+    // Manejar autenticación
+    loginBtn.addEventListener('click', async () => {
         try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-
-            const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-            if (token) {
-                signInWithCustomToken(auth, token).catch(() => signInAnonymously(auth));
-            } else {
-                signInAnonymously(auth).catch((err) => console.log("Anonymous auth fallback:", err));
-            }
-        } catch (e) {
-            console.error("Firebase Initialization Error:", e);
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Error al iniciar sesión:", error);
         }
+    });
 
-        // Auth UI references
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userInfo = document.getElementById('user-info');
-        const userAvatar = document.getElementById('user-avatar');
-        const userName = document.getElementById('user-name');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const loginPrompt = document.getElementById('login-prompt');
-
-        if (auth) {
-            onAuthStateChanged(auth, (user) => {
-                currentUser = user;
-                if (user && !user.isAnonymous && user.email) {
-                    // Authenticated with Google
-                    loginBtn.classList.add('hidden');
-                    loginBtn.classList.remove('flex');
-                    userInfo.classList.remove('hidden');
-                    userInfo.classList.add('flex');
-                    userAvatar.src = user.photoURL || 'https://placehold.co/100x100/f59e0b/0f172a?text=U';
-                    userName.textContent = user.displayName || 'Usuario';
-                    chatInput.disabled = false;
-                    sendBtn.disabled = false;
-                    loginPrompt.classList.add('hidden');
-                } else {
-                    // Anonymous or not logged in
-                    userInfo.classList.remove('flex');
-                    userInfo.classList.add('hidden');
-                    loginBtn.classList.remove('hidden');
-                    loginBtn.classList.add('flex');
-                    chatInput.disabled = true;
-                    sendBtn.disabled = true;
-                    loginPrompt.classList.remove('hidden');
-                }
-            });
-
-            loginBtn.addEventListener('click', async () => {
-                const provider = new GoogleAuthProvider();
-                try {
-                    await signInWithPopup(auth, provider);
-                } catch (error) {
-                    console.error("Google login error:", error);
-                }
-            });
-
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await signOut(auth);
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error("Logout error:", error);
-                }
-            });
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
         }
+    });
 
-        // Firestore Interactive Message Wall
-        const messagesContainer = document.getElementById('messages-container');
-        const chatForm = document.getElementById('chat-form');
+    // Observar estado del usuario
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (user) {
+            loginBtn.classList.add('hidden');
+            userProfile.classList.remove('hidden');
+            userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+            userName.textContent = user.displayName;
+            chatForm.classList.remove('hidden');
+            authPrompt.classList.add('hidden');
+        } else {
+            loginBtn.classList.remove('hidden');
+            userProfile.classList.add('hidden');
+            chatForm.classList.add('hidden');
+            authPrompt.classList.remove('hidden');
+        }
+    });
 
-        if (db) {
-            // Strict path rule: /artifacts/{appId}/public/data/{collectionName}
-            const messagesRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+    // Enviar mensaje a Firestore
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text || !currentUser) return;
 
-            // Listen to messages without compound queries
-            onSnapshot(messagesRef, (snapshot) => {
-                let messages = [];
-                snapshot.forEach((doc) => {
-                    messages.push({ id: doc.id, ...doc.data() });
-                });
-
-                // Sort in memory by timestamp
-                messages.sort((a, b) => {
-                    const timeA = a.createdAt || (a.timestamp?.toMillis ? a.timestamp.toMillis() : 0);
-                    const timeB = b.createdAt || (b.timestamp?.toMillis ? b.timestamp.toMillis() : 0);
-                    return timeA - timeB;
-                });
-
-                if (messages.length === 0) {
-                    messagesContainer.innerHTML = `
-                        <div class="text-center py-12 text-slate-400 dark:text-slate-500 text-sm">
-                            <i class="fa-regular fa-comment-dots text-3xl mb-2 text-amber-500/50"></i>
-                            <p>Aún no hay mensajes en el muro.</p>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">¡Sé el primero en enviar tu saludo!</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                messagesContainer.innerHTML = '';
-                messages.forEach((msg) => {
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = "p-3.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xs flex space-x-3 items-start transition-colors duration-300";
-
-                    const avatar = msg.userPhoto || 'https://placehold.co/100x100/f59e0b/0f172a?text=U';
-                    const name = escapeHtml(msg.userName || 'Hermano(a)');
-                    const text = escapeHtml(msg.text || '');
-
-                    msgDiv.innerHTML = `
-                        <img src="${avatar}" alt="Avatar" class="w-8 h-8 rounded-xl object-cover border border-amber-500/30 flex-shrink-0">
-                        <div class="flex-grow min-w-0">
-                            <div class="flex items-center justify-between mb-0.5">
-                                <span class="font-bold text-xs text-slate-900 dark:text-amber-400 truncate">${name}</span>
-                                <span class="text-[10px] text-slate-400">${formatTime(msg.createdAt)}</span>
-                            </div>
-                            <p class="text-sm text-slate-700 dark:text-slate-200 break-words leading-relaxed">${text}</p>
-                        </div>
-                    `;
-                    messagesContainer.appendChild(msgDiv);
-                });
-
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, (error) => {
-                console.error("Firestore Error:", error);
-                messagesContainer.innerHTML = `<div class="text-center py-10 text-red-500 text-sm">Error al cargar el muro interactivo.</div>`;
+        try {
+            await addDoc(collection(db, "messages"), {
+                uid: currentUser.uid,
+                name: currentUser.displayName,
+                avatar: currentUser.photoURL || 'https://via.placeholder.com/40',
+                text: text,
+                createdAt: serverTimestamp()
             });
-
-            chatForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (!currentUser || currentUser.isAnonymous) return;
-
-                const text = chatInput.value.trim();
-                if (!text) return;
-
-                try {
-                    await addDoc(messagesRef, {
-                        userId: currentUser.uid,
-                        userName: currentUser.displayName || 'Miembro',
-                        userPhoto: currentUser.photoURL || '',
-                        text: text,
-                        createdAt: Date.now(),
-                        timestamp: serverTimestamp()
-                    });
-                    chatInput.value = '';
-                } catch (error) {
-                    console.error("Error sending message:", error);
-                }
-            });
+            chatInput.value = '';
+        } catch (error) {
+            console.error("Error al enviar mensaje:", error);
+            alert("No se pudo enviar el mensaje. Asegúrate de tener Firestore configurado.");
         }
+    });
 
-        // Helper functions
-        function escapeHtml(str) {
-            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
+    // Cargar mensajes en tiempo real
+    const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
+    onSnapshot(q, (snapshot) => {
+        chatMessages.innerHTML = '';
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = "flex items-start space-x-3 p-2 rounded-lg bg-black/5 dark:bg-white/5";
+            
+            const time = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Reciente';
 
-        function formatTime(timestamp) {
-            if (!timestamp) return 'ahora';
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-    </script>
-</body>
-</html>
+            div.innerHTML = `
+                <img src="${data.avatar}" class="w-8 h-8 rounded-full object-cover mt-1" alt="Avatar">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-amber-600 dark:text-amber-400 truncate">${data.name}</span>
+                        <span class="text-[10px] text-gray-400">${time}</span>
+                    </div>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 break-words mt-0.5">${escapeHtml(data.text)}</p>
+                </div>
+            `;
+            chatMessages.appendChild(div);
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+
+    function escapeHtml(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+</script>
