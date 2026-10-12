@@ -29,7 +29,7 @@
         }
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+<body class="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-x-hidden">
 
     <!-- Pantalla de Interacción Previa (Splash / Play inicial) -->
     <div id="welcomeOverlay" class="fixed inset-0 z-50 bg-gray-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-opacity duration-500">
@@ -49,11 +49,35 @@
     <!-- Elemento de audio oculto para el sonido de conteo -->
     <audio id="conteoAudio" src="sonidoconteo.wav" preload="auto"></audio>
 
+    <!-- Overlay de Fondo para la Barra Lateral (Sombra) -->
+    <div id="sidebarBackdrop" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity duration-300 opacity-0"></div>
+
+    <!-- Barra Lateral Deslizante (Panel de Horarios) -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 transform -translate-x-full transition-transform duration-300 ease-in-out shadow-2xl flex flex-col">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <h2 class="font-bold text-lg text-amber-500">Programación</h2>
+            </div>
+            <button id="closeSidebarBtn" class="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl">
+                ✕
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="schedulePublicList">
+            <!-- Horarios cargados desde Firestore -->
+        </div>
+    </aside>
+
     <!-- Header / Navbar -->
-    <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 shadow-sm">
+    <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <!-- Logo y Nombre -->
+            <!-- Botón de Menú/Horarios + Logo -->
             <div class="flex items-center space-x-3">
+                <button id="toggleSidebarBtn" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-amber-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center space-x-1.5" title="Ver Programación">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    <span class="text-xs font-bold hidden sm:inline">Horarios</span>
+                </button>
+
                 <img src="icon.png" alt="Hebreos TV Logo" class="w-10 h-10 rounded-xl object-cover shadow-lg shadow-amber-500/30 border border-amber-500/50">
                 <div>
                     <h1 class="text-xl font-black tracking-wider text-amber-500">HEBREOS TV</h1>
@@ -157,7 +181,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB55d1iEAZGcGjlpnWMGIU3JAu1CRknkSw",
@@ -179,34 +203,80 @@
         const startStreamBtn = document.getElementById('startStreamBtn');
         const streamIframe = document.getElementById('streamIframe');
         
+        // Controles de la barra lateral (Sidebar)
+        const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const schedulePublicList = document.getElementById('schedulePublicList');
+
+        function openSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarBackdrop.classList.remove('hidden');
+            setTimeout(() => sidebarBackdrop.classList.remove('opacity-0'), 10);
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarBackdrop.classList.add('opacity-0');
+            setTimeout(() => sidebarBackdrop.classList.add('hidden'), 300);
+        }
+
+        toggleSidebarBtn.addEventListener('click', openSidebar);
+        closeSidebarBtn.addEventListener('click', closeSidebar);
+        sidebarBackdrop.addEventListener('click', closeSidebar);
+
+        // Cargar horarios del canal desde Firestore en tiempo real
+        const scheduleQuery = query(collection(db, "schedule"), orderBy("createdAt", "asc"));
+        onSnapshot(scheduleQuery, (snapshot) => {
+            schedulePublicList.innerHTML = '';
+            if (snapshot.empty) {
+                schedulePublicList.innerHTML = `
+                    <div class="text-center py-8 text-gray-400 text-sm">
+                        No hay horarios de programación disponibles por el momento.
+                    </div>
+                `;
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const item = doc.data();
+                const card = document.createElement('div');
+                card.className = "p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 space-y-1";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-xs font-bold text-amber-500">
+                        <span>${escapeHtml(item.day)}</span>
+                        <span class="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-lg border border-amber-500/20">${escapeHtml(item.time)}</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-gray-900 dark:text-gray-100">${escapeHtml(item.title)}</h4>
+                    ${item.description ? `<p class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(item.description)}</p>` : ''}
+                `;
+                schedulePublicList.appendChild(card);
+            });
+        });
+
         let currentVdoCode = "HebreosTv";
         let lastTriggerTime = null;
 
-        // Al hacer clic en el botón de reproducción inicial
         startStreamBtn.addEventListener('click', async () => {
-            // Reproducir un audio silencioso o precargar para desbloquear políticas del navegador
             conteoAudio.volume = 0;
             await conteoAudio.play().catch(() => {});
             conteoAudio.pause();
-            conteoAudio.volume = 1; // Restaurar volumen normal para las alertas de conteo
+            conteoAudio.volume = 1;
 
-            // Cargar el stream real en el iframe
             streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
 
-            // Ocultar la pantalla de bienvenida con animación
             welcomeOverlay.classList.add('opacity-0');
             setTimeout(() => {
                 welcomeOverlay.style.display = 'none';
             }, 500);
         });
 
-        // Escuchar configuración y eventos de sonido en tiempo real
         onSnapshot(doc(db, "config", "stream"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 if (data.vdoCode) {
                     currentVdoCode = data.vdoCode;
-                    // Si ya pasaron el overlay, actualizar el iframe en vivo
                     if (welcomeOverlay.style.display === 'none') {
                         streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
                     }
