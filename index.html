@@ -31,11 +31,26 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
 
+    <!-- Pantalla de Interacción Previa (Splash / Play inicial) -->
+    <div id="welcomeOverlay" class="fixed inset-0 z-50 bg-gray-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+        <div class="max-w-md w-full bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-2xl text-center space-y-6">
+            <img src="icon.png" alt="Hebreos TV" class="w-24 h-24 rounded-2xl object-cover mx-auto shadow-lg shadow-amber-500/30 border-2 border-amber-500">
+            <div>
+                <h2 class="text-2xl font-black text-amber-500 tracking-wider">HEBREOS TV</h2>
+                <p class="text-sm text-gray-400 mt-2">Bienvenido a nuestra señal en directo. Haz clic en el botón para comenzar.</p>
+            </div>
+            <button id="startStreamBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-gray-950 font-black py-3.5 px-6 rounded-2xl transition shadow-lg shadow-amber-500/30 flex items-center justify-center space-x-2 text-base">
+                <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <span>Reproducir Transmisión</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Elemento de audio oculto para el sonido de conteo -->
     <audio id="conteoAudio" src="sonidoconteo.wav" preload="auto"></audio>
 
     <!-- Header / Navbar -->
-    <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 shadow-sm">
+    <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <!-- Logo y Nombre -->
             <div class="flex items-center space-x-3">
@@ -91,7 +106,7 @@
             <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800">
                 <iframe 
                     id="streamIframe"
-                    src="https://vdo.ninja/?view=HebreosTv" 
+                    src="" 
                     class="w-full h-full border-0" 
                     allowfullscreen 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
@@ -160,16 +175,43 @@
         const provider = new GoogleAuthProvider();
 
         const conteoAudio = document.getElementById('conteoAudio');
+        const welcomeOverlay = document.getElementById('welcomeOverlay');
+        const startStreamBtn = document.getElementById('startStreamBtn');
+        const streamIframe = document.getElementById('streamIframe');
+        
+        let currentVdoCode = "HebreosTv";
         let lastTriggerTime = null;
+
+        // Al hacer clic en el botón de reproducción inicial
+        startStreamBtn.addEventListener('click', async () => {
+            // Reproducir un audio silencioso o precargar para desbloquear políticas del navegador
+            conteoAudio.volume = 0;
+            await conteoAudio.play().catch(() => {});
+            conteoAudio.pause();
+            conteoAudio.volume = 1; // Restaurar volumen normal para las alertas de conteo
+
+            // Cargar el stream real en el iframe
+            streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
+
+            // Ocultar la pantalla de bienvenida con animación
+            welcomeOverlay.classList.add('opacity-0');
+            setTimeout(() => {
+                welcomeOverlay.style.display = 'none';
+            }, 500);
+        });
 
         // Escuchar configuración y eventos de sonido en tiempo real
         onSnapshot(doc(db, "config", "stream"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                const iframe = document.getElementById('streamIframe');
-                if (data.vdoCode && iframe) {
-                    iframe.src = `https://vdo.ninja/?view=${data.vdoCode}`;
+                if (data.vdoCode) {
+                    currentVdoCode = data.vdoCode;
+                    // Si ya pasaron el overlay, actualizar el iframe en vivo
+                    if (welcomeOverlay.style.display === 'none') {
+                        streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
+                    }
                 }
+                
                 const alertContainer = document.getElementById('alertContainer');
                 if (data.alertText && data.alertText.trim() !== '') {
                     alertContainer.innerHTML = `
@@ -182,15 +224,14 @@
                     alertContainer.innerHTML = '';
                 }
 
-                // Detectar si el administrador presionó el botón de sonido
                 if (data.triggerSound) {
                     const triggerTime = data.triggerSound.toMillis ? data.triggerSound.toMillis() : data.triggerSound.seconds;
                     if (lastTriggerTime === null) {
-                        lastTriggerTime = triggerTime; // Inicializar en la primera lectura
+                        lastTriggerTime = triggerTime;
                     } else if (triggerTime !== lastTriggerTime) {
                         lastTriggerTime = triggerTime;
                         conteoAudio.currentTime = 0;
-                        conteoAudio.play().catch(err => console.log("Audio bloqueado por políticas del navegador:", err));
+                        conteoAudio.play().catch(err => console.log("Audio bloqueado:", err));
                     }
                 }
             }
