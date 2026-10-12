@@ -80,7 +80,7 @@
     <!-- Contenido Principal -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Reproductor de Video (Ocupa 2 columnas en pantallas grandes) -->
+        <!-- Reproductor de Video -->
         <div class="lg:col-span-2 flex flex-col space-y-4">
             <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800">
                 <iframe 
@@ -174,7 +174,7 @@
             }
         });
 
-        // Referencias de elementos DOM de autenticación y chat
+        // Referencias de elementos DOM
         const loginBtn = document.getElementById('loginBtn');
         const userProfile = document.getElementById('userProfile');
         const userAvatar = document.getElementById('userAvatar');
@@ -236,10 +236,11 @@
                 chatInput.value = '';
             } catch (error) {
                 console.error("Error al enviar mensaje:", error);
-                alert("No se pudo enviar el mensaje. Asegúrate de habilitar Cloud Firestore en la consola de Firebase.");
+                alert("No se pudo enviar el mensaje. Verifica tus reglas de Firestore.");
             }
         });
 
+        // Cargar mensajes en tiempo real (con manejo seguro de marcas de tiempo)
         const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
         onSnapshot(q, (snapshot) => {
             chatMessages.innerHTML = '';
@@ -248,7 +249,11 @@
                 const div = document.createElement('div');
                 div.className = "flex items-start space-x-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800";
                 
-                const time = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Reciente';
+                // Conversión segura de fecha si el servidor aún la está procesando
+                let time = 'Reciente';
+                if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                    time = data.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
 
                 div.innerHTML = `
                     <img src="${data.avatar}" class="w-8 h-8 rounded-full object-cover mt-0.5 border border-amber-500/50" alt="Avatar">
