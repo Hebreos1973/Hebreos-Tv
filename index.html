@@ -77,6 +77,9 @@
         </div>
     </header>
 
+    <!-- Contenedor dinámico para Alertas Personalizadas del Admin -->
+    <div id="alertContainer"></div>
+
     <!-- Contenido Principal -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -84,6 +87,7 @@
         <div class="lg:col-span-2 flex flex-col space-y-4">
             <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800">
                 <iframe 
+                    id="streamIframe"
                     src="https://vdo.ninja/?view=HebreosTv" 
                     class="w-full h-full border-0" 
                     allowfullscreen 
@@ -142,7 +146,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Configuración de Firebase
         const firebaseConfig = {
@@ -171,6 +175,30 @@
             } else {
                 htmlElement.classList.add('dark');
                 localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Escuchar configuración del Administrador (VDO.Ninja y Alertas en tiempo real)
+        onSnapshot(doc(db, "config", "stream"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                // Actualizar reproductor de VDO.Ninja
+                const iframe = document.getElementById('streamIframe');
+                if (data.vdoCode && iframe) {
+                    iframe.src = `https://vdo.ninja/?view=${data.vdoCode}`;
+                }
+                // Actualizar Alerta personalizada
+                const alertContainer = document.getElementById('alertContainer');
+                if (data.alertText && data.alertText.trim() !== '') {
+                    alertContainer.innerHTML = `
+                        <div class="bg-amber-500 text-gray-950 px-4 py-3 font-bold text-center text-sm shadow-md animate-pulse flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                            <span>${escapeHtml(data.alertText)}</span>
+                        </div>
+                    `;
+                } else {
+                    alertContainer.innerHTML = '';
+                }
             }
         });
 
@@ -236,11 +264,11 @@
                 chatInput.value = '';
             } catch (error) {
                 console.error("Error al enviar mensaje:", error);
-                alert("No se pudo enviar el mensaje. Verifica tus reglas de Firestore.");
+                alert("No se pudo enviar el mensaje.");
             }
         });
 
-        // Cargar mensajes en tiempo real (con manejo seguro de marcas de tiempo)
+        // Cargar mensajes en tiempo real
         const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
         onSnapshot(q, (snapshot) => {
             chatMessages.innerHTML = '';
@@ -249,7 +277,6 @@
                 const div = document.createElement('div');
                 div.className = "flex items-start space-x-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800";
                 
-                // Conversión segura de fecha si el servidor aún la está procesando
                 let time = 'Reciente';
                 if (data.createdAt && typeof data.createdAt.toDate === 'function') {
                     time = data.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
