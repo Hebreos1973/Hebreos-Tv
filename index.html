@@ -358,20 +358,19 @@
             streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
         });
 
-        // LÓGICA DE INSTALACIÓN DIRECTA Y DETECCIÓN DE PWA INSTALADA
+        // LÓGICA DE INSTALACIÓN DIRECTA Y OCULTAMIENTO AUTOMÁTICO SI YA ESTÁ INSTALADA
         let deferredPrompt = null;
         const installAppBtn = document.getElementById('installAppBtn');
 
-        // Comprobar si la app ya está instalada (modo standalone o launched from home screen)
         const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
         if (isAppInstalled) {
-            installAppBtn.classList.add('hidden'); // Ocultar si ya está instalada
+            installAppBtn.classList.add('hidden');
         } else {
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                installAppBtn.classList.remove('hidden'); // Mostrar solo cuando el navegador esté listo para instalar
+                installAppBtn.classList.remove('hidden');
                 installAppBtn.classList.add('flex');
             });
         }
