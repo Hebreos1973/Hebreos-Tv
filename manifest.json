@@ -1,7 +1,7 @@
 {
   "name": "Hebreos TV",
   "short_name": "HebreosTV",
-  "start_url": "./index.html",
+  "start_url": "/Hebreos-Tv/index.html",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#f59e0b",
