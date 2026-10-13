@@ -89,8 +89,8 @@
                     <span>🎙️ Modo Presentador</span>
                 </button>
 
-                <!-- Botón de Instalación Directa -->
-                <button id="installAppBtn" class="flex items-center space-x-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-amber-500/30 shadow-sm" title="Instalar Aplicación">
+                <!-- Botón de Instalación Directa (Oculto por defecto hasta que el navegador permita instalar, o si ya está instalada) -->
+                <button id="installAppBtn" class="hidden items-center space-x-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-amber-500/30 shadow-sm" title="Instalar Aplicación">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     <span class="hidden sm:inline">Instalar App</span>
                 </button>
@@ -256,7 +256,7 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // Configuración de AudioContext optimizada (Sólo se inicializa al hacer clic en el botón de bienvenida)
+        // Configuración de AudioContext optimizada
         let audioCtx = null;
         let audioBuffer = null;
 
@@ -347,7 +347,7 @@
             presenterModal.classList.remove('hidden');
             publicStreamSection.classList.add('hidden');
             publicChatSection.classList.add('hidden');
-            streamIframe.src = ""; // Silenciar stream público
+            streamIframe.src = "";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
@@ -358,25 +358,32 @@
             streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
         });
 
-        // LÓGICA DE INSTALACIÓN DIRECTA (PWA)
-        let deferredPrompt;
+        // LÓGICA DE INSTALACIÓN DIRECTA Y DETECCIÓN DE PWA INSTALADA
+        let deferredPrompt = null;
         const installAppBtn = document.getElementById('installAppBtn');
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
+        // Comprobar si la app ya está instalada (modo standalone o launched from home screen)
+        const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        if (isAppInstalled) {
+            installAppBtn.classList.add('hidden'); // Ocultar si ya está instalada
+        } else {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installAppBtn.classList.remove('hidden'); // Mostrar solo cuando el navegador esté listo para instalar
+                installAppBtn.classList.add('flex');
+            });
+        }
 
         installAppBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    console.log('Usuario aceptó instalar la PWA');
+                    installAppBtn.classList.add('hidden');
                 }
                 deferredPrompt = null;
-            } else {
-                alert("Para instalar la app, utiliza el menú de opciones de tu navegador y selecciona 'Instalar aplicación' o 'Añadir a la pantalla de inicio'.");
             }
         });
 
@@ -444,7 +451,6 @@
                     scriptBlocksList.appendChild(div);
                 });
 
-                // Cambiar estado de completado (Check)
                 document.querySelectorAll('.toggle-block-check').forEach(chk => {
                     chk.addEventListener('change', async (e) => {
                         const id = e.target.getAttribute('data-id');
@@ -453,7 +459,6 @@
                     });
                 });
 
-                // Habilitar edición inline del texto del bloque al hacer clic
                 document.querySelectorAll('.block-text-span').forEach(span => {
                     span.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -490,7 +495,6 @@
                     });
                 });
 
-                // Eliminar bloque
                 document.querySelectorAll('.delete-block-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const id = e.target.getAttribute('data-id');
@@ -518,7 +522,6 @@
         closeSidebarBtn.addEventListener('click', closeSidebar);
         sidebarBackdrop.addEventListener('click', closeSidebar);
 
-        // Cargar horarios del canal desde Firestore en tiempo real
         const scheduleQuery = query(collection(db, "schedule"), orderBy("createdAt", "asc"));
         onSnapshot(scheduleQuery, (snapshot) => {
             schedulePublicList.innerHTML = '';
@@ -551,7 +554,7 @@
         let lastTriggerTime = null;
 
         startStreamBtn.addEventListener('click', async () => {
-            await initAudioContext(); // El audio solo se inicializa y prepara aquí
+            await initAudioContext();
 
             if (presenterModal.classList.contains('hidden')) {
                 streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
