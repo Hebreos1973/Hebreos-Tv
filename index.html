@@ -588,6 +588,7 @@
                     } else if (triggerTime !== lastTriggerTime) {
                         lastTriggerTime = triggerTime;
                         
+                        // Validar estrictamente que solo suene si el rol es presentador
                         if (isPresenterRole) {
                             playConteoSound();
                         }
