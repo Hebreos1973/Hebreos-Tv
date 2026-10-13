@@ -46,9 +46,6 @@
         </div>
     </div>
 
-    <!-- Elemento de audio oculto para el sonido de conteo -->
-    <audio id="conteoAudio" src="sonidoconteo.wav" preload="auto"></audio>
-
     <!-- Overlay de Fondo para la Barra Lateral (Sombra) -->
     <div id="sidebarBackdrop" class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity duration-300 opacity-0"></div>
 
@@ -139,7 +136,7 @@
                     <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500 text-amber-500 flex items-center justify-center font-black">🎙️</div>
                     <div>
                         <h2 class="text-lg font-bold text-amber-500">Panel de Grabación - Modo Presentador</h2>
-                        <p class="text-xs text-gray-500">Estudio privado de producción y guion interactivo</p>
+                        <p class="text-xs text-gray-500">Estudio privado de producción y guion interactivo (Haz clic en un bloque para editarlo)</p>
                     </div>
                 </div>
                 <button id="closePresenterModeBtn" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-xl font-bold transition">
@@ -258,7 +255,34 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        const conteoAudio = document.getElementById('conteoAudio');
+        // Configuración de AudioContext para evitar pausas en el stream de video
+        let audioCtx = null;
+        let audioBuffer = null;
+
+        async function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                try {
+                    const response = await fetch('sonidoconteo.wav');
+                    const arrayBuffer = await response.arrayBuffer();
+                    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                } catch (e) {
+                    console.error("Error al cargar el archivo de audio:", e);
+                }
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playConteoSound() {
+            if (!audioCtx || !audioBuffer) return;
+            const source = audioCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioCtx.destination);
+            source.start(0);
+        }
+
         const welcomeOverlay = document.getElementById('welcomeOverlay');
         const startStreamBtn = document.getElementById('startStreamBtn');
         const streamIframe = document.getElementById('streamIframe');
@@ -390,13 +414,14 @@
                     div.innerHTML = `
                         <label class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0 pr-2">
                             <input type="checkbox" data-id="${bId}" class="toggle-block-check w-4 h-4 accent-amber-500 rounded shrink-0" ${block.completed ? 'checked' : ''}>
-                            <span class="font-medium truncate ${block.completed ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'}">${escapeHtml(block.text)}</span>
+                            <span data-id="${bId}" class="block-text-span font-medium truncate flex-1 ${block.completed ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'}" title="Haz clic para editar">${escapeHtml(block.text)}</span>
                         </label>
                         <button data-id="${bId}" class="delete-block-btn text-red-500 hover:text-red-700 px-2 py-1 font-bold shrink-0">✕</button>
                     `;
                     scriptBlocksList.appendChild(div);
                 });
 
+                // Cambiar estado de completado (Check)
                 document.querySelectorAll('.toggle-block-check').forEach(chk => {
                     chk.addEventListener('change', async (e) => {
                         const id = e.target.getAttribute('data-id');
@@ -405,6 +430,44 @@
                     });
                 });
 
+                // Habilitar edición inline del texto del bloque al hacer clic
+                document.querySelectorAll('.block-text-span').forEach(span => {
+                    span.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const bId = span.getAttribute('data-id');
+                        const currentText = span.textContent;
+
+                        const inputEdit = document.createElement('input');
+                        inputEdit.type = 'text';
+                        inputEdit.value = currentText;
+                        inputEdit.className = "w-full bg-gray-100 dark:bg-gray-900 border border-amber-500 rounded px-2 py-1 text-xs focus:outline-none";
+                        
+                        span.replaceWith(inputEdit);
+                        inputEdit.focus();
+
+                        const saveEdit = async () => {
+                            const newText = inputEdit.value.trim();
+                            if (newText && newText !== currentText) {
+                                try {
+                                    await setDoc(doc(db, `users/${uid}/scriptBlocks`, bId), { text: newText }, { merge: true });
+                                } catch (err) {
+                                    console.error("Error al actualizar bloque:", err);
+                                }
+                            } else {
+                                loadPresenterScript(uid); // Revertir si está vacío
+                            }
+                        };
+
+                        inputEdit.addEventListener('blur', saveEdit);
+                        inputEdit.addEventListener('keydown', (ev) => {
+                            if (ev.key === 'Enter') {
+                                inputEdit.blur();
+                            }
+                        });
+                    });
+                });
+
+                // Eliminar bloque
                 document.querySelectorAll('.delete-block-btn').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const id = e.target.getAttribute('data-id');
@@ -465,10 +528,8 @@
         let lastTriggerTime = null;
 
         startStreamBtn.addEventListener('click', async () => {
-            conteoAudio.volume = 0;
-            await conteoAudio.play().catch(() => {});
-            conteoAudio.pause();
-            conteoAudio.volume = 1;
+            await initAudioContext();
+            playConteoSound(); // Prueba inicial silenciosa de audio
 
             if (presenterModal.classList.contains('hidden')) {
                 streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
@@ -509,9 +570,9 @@
                     } else if (triggerTime !== lastTriggerTime) {
                         lastTriggerTime = triggerTime;
                         
+                        // REPRODUCIR SONIDO LIMPIO SIN INTERRUMPIR EL VIDEO
                         if (isPresenterRole) {
-                            conteoAudio.currentTime = 0;
-                            conteoAudio.play().catch(err => console.log("Audio bloqueado:", err));
+                            playConteoSound();
                         }
                     }
                 }
