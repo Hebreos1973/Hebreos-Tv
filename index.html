@@ -192,7 +192,7 @@
         </div>
 
         <div class="lg:col-span-2 flex flex-col space-y-4" id="publicStreamSection">
-            <!-- Contenedor del Reproductor de Video con Luz Ambiental (Exclusivo usuarios normales) -->
+            <!-- Contenedor del Reproductor de Video con Luz Ambiental (Para todos los usuarios) -->
             <div class="relative w-full aspect-video bg-black rounded-2xl overflow-visible shadow-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300 my-2" id="playerWrapper">
                 <!-- Capa de Luz Ambiental -->
                 <div id="ambientGlowElement" class="ambient-glow"></div>
@@ -685,16 +685,12 @@
                         isPresenterRole = true;
                         togglePresenterModeBtn.classList.remove('hidden');
                         togglePresenterModeBtn.classList.add('flex');
-                        // Si es presentador, ocultamos el efecto de luz ambiental del reproductor principal público
-                        ambientGlowElement.style.display = 'none';
                         loadPresenterScript(user.uid);
                     } else {
                         isPresenterRole = false;
                         togglePresenterModeBtn.classList.add('hidden');
                         togglePresenterModeBtn.classList.remove('flex');
                         presenterModal.classList.add('hidden');
-                        // Para usuarios normales, aseguramos que la luz ambiental esté activa
-                        ambientGlowElement.style.display = 'block';
                         if (unsubScript) unsubScript();
                     }
                 });
@@ -708,8 +704,6 @@
                 userProfile.classList.add('hidden');
                 chatForm.classList.add('hidden');
                 authPrompt.classList.add('hidden');
-                // Usuario no logueado (considerado usuario normal): se muestra la luz ambiental
-                ambientGlowElement.style.display = 'block';
                 if (unsubScript) unsubScript();
             }
         });
