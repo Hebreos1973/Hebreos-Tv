@@ -28,6 +28,20 @@
             }
         }
     </script>
+    <style>
+        /* Estilos personalizados para el efecto de luz ambiental */
+        .ambient-glow {
+            position: absolute;
+            inset: -15px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(217, 119, 6, 0.2), rgba(180, 83, 9, 0.3));
+            filter: blur(35px);
+            border-radius: 2rem;
+            z-index: -1;
+            opacity: 0.75;
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-x-hidden">
 
@@ -178,15 +192,20 @@
         </div>
 
         <div class="lg:col-span-2 flex flex-col space-y-4" id="publicStreamSection">
-            <!-- Contenedor del Reproductor de Video -->
-            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300" id="playerWrapper">
-                <iframe 
-                    id="streamIframe"
-                    src="" 
-                    class="w-full h-full border-0 transition-all duration-300" 
-                    allowfullscreen 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-                </iframe>
+            <!-- Contenedor del Reproductor de Video con Luz Ambiental (Exclusivo usuarios normales) -->
+            <div class="relative w-full aspect-video bg-black rounded-2xl overflow-visible shadow-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300 my-2" id="playerWrapper">
+                <!-- Capa de Luz Ambiental -->
+                <div id="ambientGlowElement" class="ambient-glow"></div>
+                
+                <div class="relative w-full h-full rounded-2xl overflow-hidden bg-black z-10">
+                    <iframe 
+                        id="streamIframe"
+                        src="" 
+                        class="w-full h-full border-0 transition-all duration-300" 
+                        allowfullscreen 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                    </iframe>
+                </div>
             </div>
 
             <!-- Botón de Modo Solo Audio (Abajo del reproductor) -->
@@ -296,6 +315,7 @@
 
         const toggleAudioModeBtn = document.getElementById('toggleAudioModeBtn');
         const playerWrapper = document.getElementById('playerWrapper');
+        const ambientGlowElement = document.getElementById('ambientGlowElement');
         const audioModeText = document.getElementById('audioModeText');
         const audioModeIcon = document.getElementById('audioModeIcon');
 
@@ -320,6 +340,7 @@
             if (isAudioOnly) {
                 playerWrapper.classList.remove('aspect-video');
                 playerWrapper.style.height = '60px';
+                ambientGlowElement.style.opacity = '0'; // Ocultar luz en modo audio
                 streamIframe.style.opacity = '0';
                 streamIframe.style.pointerEvents = 'none';
 
@@ -330,6 +351,7 @@
             } else {
                 playerWrapper.classList.add('aspect-video');
                 playerWrapper.style.height = '';
+                ambientGlowElement.style.opacity = '0.75'; // Restaurar luz ambiental
                 streamIframe.style.opacity = '1';
                 streamIframe.style.pointerEvents = 'auto';
 
@@ -663,12 +685,16 @@
                         isPresenterRole = true;
                         togglePresenterModeBtn.classList.remove('hidden');
                         togglePresenterModeBtn.classList.add('flex');
+                        // Si es presentador, ocultamos el efecto de luz ambiental del reproductor principal público
+                        ambientGlowElement.style.display = 'none';
                         loadPresenterScript(user.uid);
                     } else {
                         isPresenterRole = false;
                         togglePresenterModeBtn.classList.add('hidden');
                         togglePresenterModeBtn.classList.remove('flex');
                         presenterModal.classList.add('hidden');
+                        // Para usuarios normales, aseguramos que la luz ambiental esté activa
+                        ambientGlowElement.style.display = 'block';
                         if (unsubScript) unsubScript();
                     }
                 });
@@ -682,6 +708,8 @@
                 userProfile.classList.add('hidden');
                 chatForm.classList.add('hidden');
                 authPrompt.classList.add('hidden');
+                // Usuario no logueado (considerado usuario normal): se muestra la luz ambiental
+                ambientGlowElement.style.display = 'block';
                 if (unsubScript) unsubScript();
             }
         });
