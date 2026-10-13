@@ -562,13 +562,16 @@
         onSnapshot(doc(db, "config", "stream"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (data.vdoCode) {
+                
+                // 1. Actualizar código de stream SOLO si realmente cambió el código de VDO
+                if (data.vdoCode && data.vdoCode !== currentVdoCode) {
                     currentVdoCode = data.vdoCode;
                     if (welcomeOverlay.style.display === 'none' && presenterModal.classList.contains('hidden')) {
                         streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
                     }
                 }
                 
+                // 2. Gestionar Alertas en pantalla
                 const alertContainer = document.getElementById('alertContainer');
                 if (data.alertText && data.alertText.trim() !== '') {
                     alertContainer.innerHTML = `
@@ -581,6 +584,7 @@
                     alertContainer.innerHTML = '';
                 }
 
+                // 3. Gestionar Sonido de Conteo Exclusivo para Presentadores (Sin afectar video)
                 if (data.triggerSound) {
                     const triggerTime = data.triggerSound.toMillis ? data.triggerSound.toMillis() : data.triggerSound.seconds;
                     if (lastTriggerTime === null) {
@@ -588,7 +592,6 @@
                     } else if (triggerTime !== lastTriggerTime) {
                         lastTriggerTime = triggerTime;
                         
-                        // Validar estrictamente que solo suene si el rol es presentador
                         if (isPresenterRole) {
                             playConteoSound();
                         }
