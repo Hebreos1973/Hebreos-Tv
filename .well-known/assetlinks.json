@@ -1,8 +1,8 @@
 [{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.hebreostv.app",
-        "sha256_cert_fingerprints": ["81:90:3E:D8:57:E0:18:A4:FE:D9:55:FC:9C:F8:ED:EB:C5:82:46:F9:81:95:08:3B:2E:FA:D8:6B:0D:08:C1:D8"]
-      }
-    }]
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.hebreostv.app",
+    "sha256_cert_fingerprints": ["81:90:3E:D8:57:E0:18:A4:FE:D9:55:FC:9C:F8:ED:EB:C5:82:46:F9:81:95:08:3B:2E:FA:D8:6B:0D:08:C1:D8"]
+  }
+}]
