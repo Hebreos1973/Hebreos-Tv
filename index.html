@@ -132,63 +132,53 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <!-- Panel de Grabación para Presentador (Oculto por defecto, se despliega al hacer clic en el botón) -->
+        <!-- Panel de Grabación para Presentador (Oculto por defecto) -->
         <div id="presenterModal" class="hidden lg:col-span-3 bg-white dark:bg-gray-900 p-6 rounded-3xl border-2 border-amber-500 shadow-2xl space-y-6">
             <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500 text-amber-500 flex items-center justify-center font-black">🎙️</div>
                     <div>
                         <h2 class="text-lg font-bold text-amber-500">Panel de Grabación - Modo Presentador</h2>
-                        <p class="text-xs text-gray-500">Herramientas de set, embed personalizado y guion interactivo</p>
+                        <p class="text-xs text-gray-500">Estudio privado de producción y guion interactivo</p>
                     </div>
                 </div>
-                <button id="closePresenterModeBtn" class="text-xs bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 px-3 py-1.5 rounded-xl font-bold transition">
-                    ✕ Cerrar Panel
+                <button id="closePresenterModeBtn" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-xl font-bold transition">
+                    ✕ Salir del Modo Presentador
                 </button>
             </div>
 
+            <!-- Contenedor de Alerta Exclusiva para Presentador -->
+            <div id="presenterAlertContainer"></div>
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Columna Izquierda: Embed Personalizado -->
+                <!-- Columna Izquierda: Retorno de Video controlado por Admin -->
                 <div class="space-y-3">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500">Fuente / Retorno de Video (VDO.Ninja)</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="presenterEmbedInput" placeholder="Ej. TuIDPersonal" class="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-amber-500">
-                        <button id="loadPresenterEmbedBtn" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-4 py-2 rounded-xl text-sm transition">Cargar</button>
-                    </div>
-                    <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500">Retorno de Video (Definido por Administrador)</label>
+                    <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-gray-800 shadow-inner">
                         <iframe id="presenterIframe" src="" class="w-full h-full border-0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Guion / Checks interactivos -->
-                <div class="space-y-3 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 flex flex-col">
+                <!-- Columna Derecha: Guion Dinámico (Añadir, Editar bloques y Checks) -->
+                <div class="space-y-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 flex flex-col">
                     <div class="flex items-center justify-between">
                         <h3 class="font-bold text-sm text-amber-500">Guion / Rundown del Programa</h3>
-                        <span class="text-xs text-gray-400">Checks interactivos</span>
+                        <span class="text-xs text-gray-400">Añade y edita tus bloques</span>
                     </div>
-                    <div id="scriptCheckList" class="flex-1 space-y-2 overflow-y-auto max-h-64">
-                        <label class="flex items-center space-x-3 p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 cursor-pointer">
-                            <input type="checkbox" class="w-4 h-4 accent-amber-500 rounded">
-                            <span class="text-sm font-medium">1. Bienvenida e introducción general</span>
-                        </label>
-                        <label class="flex items-center space-x-3 p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 cursor-pointer">
-                            <input type="checkbox" class="w-4 h-4 accent-amber-500 rounded">
-                            <span class="text-sm font-medium">2. Lectura de pasaje bíblico principal</span>
-                        </label>
-                        <label class="flex items-center space-x-3 p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 cursor-pointer">
-                            <input type="checkbox" class="w-4 h-4 accent-amber-500 rounded">
-                            <span class="text-sm font-medium">3. Desarrollo del tema central / Mensaje</span>
-                        </label>
-                        <label class="flex items-center space-x-3 p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 cursor-pointer">
-                            <input type="checkbox" class="w-4 h-4 accent-amber-500 rounded">
-                            <span class="text-sm font-medium">4. Oración final y despedida</span>
-                        </label>
+
+                    <form id="addScriptBlockForm" class="flex gap-2">
+                        <input type="text" id="newBlockInput" placeholder="Ej. Bloque 5: Entrevista especial..." class="flex-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500" required>
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold px-4 py-2 rounded-xl text-xs transition">+ Añadir</button>
+                    </form>
+
+                    <div id="scriptBlocksList" class="flex-1 space-y-2 overflow-y-auto max-h-56">
+                        <!-- Bloques cargados dinámicamente -->
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="lg:col-span-2 flex flex-col space-y-4">
+        <div class="lg:col-span-2 flex flex-col space-y-4" id="publicStreamSection">
             <!-- Contenedor del Reproductor de Video -->
             <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300" id="playerWrapper">
                 <iframe 
@@ -212,7 +202,7 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-[600px] lg:h-auto overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col h-[600px] lg:h-auto overflow-hidden" id="publicChatSection">
             <div class="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
                 <h3 class="font-bold text-base flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
@@ -251,7 +241,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB55d1iEAZGcGjlpnWMGIU3JAu1CRknkSw",
@@ -290,12 +280,17 @@
         const togglePresenterModeBtn = document.getElementById('togglePresenterModeBtn');
         const presenterModal = document.getElementById('presenterModal');
         const closePresenterModeBtn = document.getElementById('closePresenterModeBtn');
-        const presenterEmbedInput = document.getElementById('presenterEmbedInput');
-        const loadPresenterEmbedBtn = document.getElementById('loadPresenterEmbedBtn');
         const presenterIframe = document.getElementById('presenterIframe');
+        const presenterAlertContainer = document.getElementById('presenterAlertContainer');
+        const addScriptBlockForm = document.getElementById('addScriptBlockForm');
+        const newBlockInput = document.getElementById('newBlockInput');
+        const scriptBlocksList = document.getElementById('scriptBlocksList');
+        const publicStreamSection = document.getElementById('publicStreamSection');
+        const publicChatSection = document.getElementById('publicChatSection');
 
         let isAudioOnly = false;
         let isPresenterRole = false;
+        let unsubScript = null;
 
         toggleAudioModeBtn.addEventListener('click', () => {
             isAudioOnly = !isAudioOnly;
@@ -324,20 +319,102 @@
         });
 
         togglePresenterModeBtn.addEventListener('click', () => {
-            presenterModal.classList.toggle('hidden');
+            presenterModal.classList.remove('hidden');
+            publicStreamSection.classList.add('hidden');
+            publicChatSection.classList.add('hidden');
+            streamIframe.src = ""; // Silenciar stream público
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         closePresenterModeBtn.addEventListener('click', () => {
             presenterModal.classList.add('hidden');
+            publicStreamSection.classList.remove('hidden');
+            publicChatSection.classList.remove('hidden');
+            streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
         });
 
-        loadPresenterEmbedBtn.addEventListener('click', () => {
-            let val = presenterEmbedInput.value.trim();
-            if (val) {
-                presenterIframe.src = `https://vdo.ninja/?view=${val}&autoplay=1`;
+        // Sincronizar retorno y alertas de presentadores desde Firestore
+        onSnapshot(doc(db, "config", "presenter"), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.vdoCode) {
+                    presenterIframe.src = `https://vdo.ninja/?view=${data.vdoCode}&autoplay=1`;
+                }
+                if (data.alertText && data.alertText.trim() !== '') {
+                    presenterAlertContainer.innerHTML = `
+                        <div class="bg-amber-500 text-gray-950 px-4 py-3 font-bold text-center text-sm rounded-xl shadow-md animate-pulse flex items-center justify-center space-x-2">
+                            <span>📢 ${escapeHtml(data.alertText)}</span>
+                        </div>
+                    `;
+                } else {
+                    presenterAlertContainer.innerHTML = '';
+                }
             }
         });
+
+        // Gestión de bloques del guion por usuario
+        addScriptBlockForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+            const text = newBlockInput.value.trim();
+            if (!text) return;
+
+            try {
+                await addDoc(collection(db, `users/${currentUser.uid}/scriptBlocks`), {
+                    text: text,
+                    completed: false,
+                    createdAt: serverTimestamp()
+                });
+                newBlockInput.value = '';
+            } catch (err) {
+                console.error("Error al añadir bloque:", err);
+            }
+        });
+
+        function loadPresenterScript(uid) {
+            if (unsubScript) unsubScript();
+            const qBlocks = query(collection(db, `users/${uid}/scriptBlocks`), orderBy("createdAt", "asc"));
+            
+            unsubScript = onSnapshot(qBlocks, (snapshot) => {
+                scriptBlocksList.innerHTML = '';
+                if (snapshot.empty) {
+                    scriptBlocksList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No hay bloques en tu guion. Añade uno arriba.</p>';
+                    return;
+                }
+
+                snapshot.forEach((documento) => {
+                    const block = documento.data();
+                    const bId = documento.id;
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs";
+                    div.innerHTML = `
+                        <label class="flex items-center space-x-3 flex-1 cursor-pointer min-w-0 pr-2">
+                            <input type="checkbox" data-id="${bId}" class="toggle-block-check w-4 h-4 accent-amber-500 rounded shrink-0" ${block.completed ? 'checked' : ''}>
+                            <span class="font-medium truncate ${block.completed ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'}">${escapeHtml(block.text)}</span>
+                        </label>
+                        <button data-id="${bId}" class="delete-block-btn text-red-500 hover:text-red-700 px-2 py-1 font-bold shrink-0">✕</button>
+                    `;
+                    scriptBlocksList.appendChild(div);
+                });
+
+                document.querySelectorAll('.toggle-block-check').forEach(chk => {
+                    chk.addEventListener('change', async (e) => {
+                        const id = e.target.getAttribute('data-id');
+                        const checked = e.target.checked;
+                        await setDoc(doc(db, `users/${uid}/scriptBlocks`, id), { completed: checked }, { merge: true });
+                    });
+                });
+
+                document.querySelectorAll('.delete-block-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const id = e.target.getAttribute('data-id');
+                        if (confirm("¿Eliminar este bloque del guion?")) {
+                            await deleteDoc(doc(db, `users/${uid}/scriptBlocks`, id));
+                        }
+                    });
+                });
+            });
+        }
 
         function openSidebar() {
             sidebar.classList.remove('-translate-x-full');
@@ -393,7 +470,9 @@
             conteoAudio.pause();
             conteoAudio.volume = 1;
 
-            streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
+            if (presenterModal.classList.contains('hidden')) {
+                streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
+            }
 
             welcomeOverlay.classList.add('opacity-0');
             setTimeout(() => {
@@ -406,7 +485,7 @@
                 const data = docSnap.data();
                 if (data.vdoCode) {
                     currentVdoCode = data.vdoCode;
-                    if (welcomeOverlay.style.display === 'none') {
+                    if (welcomeOverlay.style.display === 'none' && presenterModal.classList.contains('hidden')) {
                         streamIframe.src = `https://vdo.ninja/?view=${currentVdoCode}&autoplay=1`;
                     }
                 }
@@ -430,7 +509,7 @@
                     } else if (triggerTime !== lastTriggerTime) {
                         lastTriggerTime = triggerTime;
                         
-                        // REPRODUCIR SONIDO DE CONTEO ÚNICAMENTE SI EL USUARIO ES PRESENTADOR
+                        // Sonar conteo únicamente si el usuario es presentador
                         if (isPresenterRole) {
                             conteoAudio.currentTime = 0;
                             conteoAudio.play().catch(err => console.log("Audio bloqueado:", err));
@@ -509,7 +588,6 @@
                 chatForm.classList.remove('hidden');
                 authPrompt.classList.add('hidden');
 
-                // Guardar/actualizar datos del usuario y rol por defecto en Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     name: user.displayName,
                     email: user.email,
@@ -517,17 +595,18 @@
                     lastLogin: serverTimestamp()
                 }, { merge: true });
 
-                // Escuchar en tiempo real si este usuario tiene rol de presentador
                 onSnapshot(doc(db, "users", user.uid), (userDoc) => {
                     if (userDoc.exists() && userDoc.data().role === 'presenter') {
                         isPresenterRole = true;
                         togglePresenterModeBtn.classList.remove('hidden');
                         togglePresenterModeBtn.classList.add('flex');
+                        loadPresenterScript(user.uid);
                     } else {
                         isPresenterRole = false;
                         togglePresenterModeBtn.classList.add('hidden');
                         togglePresenterModeBtn.classList.remove('flex');
                         presenterModal.classList.add('hidden');
+                        if (unsubScript) unsubScript();
                     }
                 });
 
@@ -540,6 +619,7 @@
                 userProfile.classList.add('hidden');
                 chatForm.classList.add('hidden');
                 authPrompt.classList.add('hidden');
+                if (unsubScript) unsubScript();
             }
         });
 
