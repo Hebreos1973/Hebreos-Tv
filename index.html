@@ -352,7 +352,7 @@
             }
         });
 
-        // Gestión de bloques del guion por usuario
+        // Gestión de bloques del guion por usuario en Firestore
         addScriptBlockForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return;
@@ -509,7 +509,6 @@
                     } else if (triggerTime !== lastTriggerTime) {
                         lastTriggerTime = triggerTime;
                         
-                        // Sonar conteo únicamente si el usuario es presentador
                         if (isPresenterRole) {
                             conteoAudio.currentTime = 0;
                             conteoAudio.play().catch(err => console.log("Audio bloqueado:", err));
